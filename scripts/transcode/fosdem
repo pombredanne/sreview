@@ -107,11 +107,15 @@ if(defined($drow->{apologynote}) && length($drow->{apologynote}) > 0) {
 system("ffmpeg -y -loop 1 -i $preroll -c:v libx264 -pix_fmt yuv420p -framerate 25 -frames:v 125 $tmpdir/$slug-preroll.ts");
 system("ffmpeg -y -i $pubdir/$slug.mp4 -c copy -bsf:v h264_mp4toannexb -y $tmpdir/$slug.ts");
 system("ffmpeg -y -loop 1 -i $postroll -c:v libx264 -pix_fmt yuv420p -framerate 25 -frames:v 125 $tmpdir/$slug-postroll.ts");
+open CONCAT, ">$tmpdir/concat.txt";
+print CONCAT "file '$tmpdir/$slug-preroll.ts'\n";
 if( -f "$tmpdir/$slug-sorry.ts") {
-	system("ffmpeg -y -i \"concat:$tmpdir/$slug-preroll.ts|$tmpdir/$slug-sorry.ts|$tmpdir/$slug.ts|$tmpdir/$slug-postroll.ts\" -c copy -bsf:a aac_adstoasc $outputdir/$slug.mp4");
-} else {
-	system("ffmpeg -y -i \"concat:$tmpdir/$slug-preroll.ts|$tmpdir/$slug.ts|$tmpdir/$slug-postroll.ts\" -c copy -bsf:a aac_adtstoasc $outputdir/$slug.mp4");
+	print CONCAT "file '$tmpdir/$slug-sorry.ts'\n";
 }
+print CONCAT "file '$tmpdir/$slug.ts'\n";
+print CONCAT "file '$tmpdir/$slug-postroll.ts'\n";
+close CONCAT;
+system("ffmpeg -y -f concat -safe 0 -i \"$tmpdir/concat.txt\" -c copy -bsf:a aac_adtstoasc $outputdir/$slug.mp4");
 system("ffmpeg -y -i $outputdir/$slug.mp4 -pass 1 -passlogfile $tmpdir/passlog-vp8 -c:v libvpx -c:a libvorbis $outputdir/$slug.vp8.webm");
 system("ffmpeg -y -i $outputdir/$slug.mp4 -pass 2 -passlogfile $tmpdir/passlog-vp8 -c:v libvpx -c:a libvorbis $outputdir/$slug.vp8.webm");
 
